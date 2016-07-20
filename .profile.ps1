@@ -1,3 +1,4 @@
+
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $snapins = @(
@@ -13,7 +14,7 @@ $snapins | ForEach-Object {
            Add-PSSnapin $_
        }
     }
-
+# create if necessary.
 $modulePath = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
     if(!(Test-Path $modulePath))
        {
@@ -21,7 +22,9 @@ $modulePath = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
        }
 
 # load all script modules available to us
-Get-Module -ListAvailable | ? { $_.ModuleType -eq "Script" } | Import-Module
+Get-Module -ListAvailable |
+? { $_.ModuleType -eq "Script" } |
+ Import-Module
 
 
 $filePath = $PROFILE.CurrentUserCurrentHost
@@ -30,11 +33,7 @@ $filePath = $PROFILE.CurrentUserCurrentHost
            New-Item -Path $filePath -ItemType File
        }
 
-# function loader
-#
-# if you want to add functions you can added scripts to your
-# powershell profile functions directory or you can inline them
-# in this file. Ignoring the dot source of any tests
+# function loader 
 Resolve-Path $here\functions\*.ps1 | 
 ? { -not ($_.ProviderPath.Contains(".Tests.")) } |
 % { . $_.ProviderPath }
@@ -46,6 +45,7 @@ function touch($file) { "" | Out-File $file -Encoding ASCII }
 Set-Alias g gvim
 $TransientScriptDir = "$here\scripts"
 $UserBinDir = "$($env:UserProfile)\bin"
+$SysBinDir = "D:\bin"
 
 # PATH update
 #
