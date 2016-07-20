@@ -1,6 +1,4 @@
-
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-
 
 # create user module path if necessary.
 $modulePath = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
@@ -15,10 +13,10 @@ Get-Module -ListAvailable |
  Import-Module
 
 # create profile if necessary.
-$filePath = $PROFILE.CurrentUserCurrentHost
-    if(!(Test-Path $filePath))
+$CUCHProfile = $PROFILE.CurrentUserCurrentHost
+    if(!(Test-Path $CUCHProfile))
        {
-           New-Item -Path $filePath -ItemType File
+           New-Item -Path $CUCHProfile -ItemType File
        }
 
 $snapins = @(
