@@ -4,6 +4,61 @@ trap { Write-Warning ($_.ScriptStackTrace | Out-String) }
 $Script:TraceVerboseTimer = New-Object System.Diagnostics.Stopwatch
 $Script:TraceVerboseTimer.Start()
 
+set-variable -name HOME -value (resolve-path $env:Home) -force
+(get-psprovider FileSystem).Home = $HOME
+
+#
+# global variables and core env variables
+#
+$HOME_ROOT = [IO.Path]::GetPathRoot($HOME)
+$TOOLS = "$HOME_ROOT\tools"
+$SCRIPTS = "$HOME\scripts"
+$env:EDITOR = 'gvim.exe'
+
+#
+# set path to include my usual directories
+# and configure dev environment
+#
+function script:append-path([string] $path ) {
+   if ( -not [string]::IsNullOrEmpty($path) ) {
+      if ( (test-path $path) -and (-not $env:PATH.contains($path)) ) {
+         $env:PATH += ';' + $path
+      }
+   }
+}
+
+
+append-path "$TOOLS"
+append-path (resolve-path "$TOOLS\svn-*")
+append-path (resolve-path "$TOOLS\nant-*")
+append-path "$TOOLS\vim"
+append-path "$TOOLS\gnu"
+append-path "$TOOLS\git\bin"
+append-path "$($env:WINDIR)\system32\inetsrv"
+
+#& "$SCRIPTS\devenv.ps1" 'vs2010'
+# using https://github.com/Iristyle/Posh-VsVars
+#Set-VsVars -Version '12.0'
+Import-Module ~/scripts/DevEnvironment
+
+if ($Host.Name –eq 'ConsoleHost')
+{
+    Import-Module PSReadline
+    # differentiate verbose from warnings!
+    $privData = (Get-Host).PrivateData
+    $privData.VerboseForegroundColor = "cyan"
+}
+elseif ($Host.Name –like '*ISE Host')
+{
+    Start-Steroids
+    Import-Module PsIseProjectExplorer
+}
+if (!$env:github_shell)
+{
+    # not sure why, but this fails in a git-flavored host
+    Add-PSSnapin Microsoft.TeamFoundation.PowerShell
+}
+
 # PS5 introduced PSReadLine, which chokes in non-console shells, so I snuff it.
 try { $NOCONSOLE = $FALSE; [System.Console]::Clear() } catch { $NOCONSOLE = $TRUE }
 
@@ -111,6 +166,55 @@ function Reset-Module ($ModuleName) { rmo $ModuleName; ipmo $ModuleName -force -
 ## The qq shortcut for quick quotes
 function qq {param([Parameter(ValueFromRemainingArguments=$true)][string[]]$q)$q}
 
+function Get-Time { return $(get-date | foreach { $_.ToLongTimeString() } ) }
+function prompt
+{
+    # Write the time 
+    write-host "[" -noNewLine
+    write-host $(Get-Time) -foreground yellow -noNewLine
+    write-host "] " -noNewLine
+    # Write the path
+    write-host $($(Get-Location).Path.replace($home,"~").replace("\","/")) -foreground green -noNewLine
+    write-host $(if ($nestedpromptlevel -ge 1) { '>>' }) -noNewLine
+    return "> "
+}
+
+# LS.MSH 
+# Colorized LS function replacement 
+# /\/\o\/\/ 2006 
+# http://mow001.blogspot.com 
+function LL
+{
+    param ($dir = ".", $all = $false) 
+
+    $origFg = $host.ui.rawui.foregroundColor 
+    if ( $all ) { $toList = ls -force $dir }
+    else { $toList = ls $dir }
+
+    foreach ($Item in $toList)  
+    { 
+        Switch ($Item.Extension)  
+        { 
+            ".Exe" {$host.ui.rawui.foregroundColor = "Yellow"} 
+            ".cmd" {$host.ui.rawui.foregroundColor = "Red"} 
+            ".msh" {$host.ui.rawui.foregroundColor = "Red"} 
+            ".vbs" {$host.ui.rawui.foregroundColor = "Red"} 
+            Default {$host.ui.rawui.foregroundColor = $origFg} 
+        } 
+        if ($item.Mode.StartsWith("d")) {$host.ui.rawui.foregroundColor = "Green"}
+        $item 
+    }  
+    $host.ui.rawui.foregroundColor = $origFg 
+}
+
+function lla
+{
+    param ( $dir=".")
+    ll $dir $true
+}
+
+function la { ls -force }
+
 # Being from profiledir.
 if($ProfileDir -ne (Get-Location)) {
    Push-Location $ProfileDir
@@ -178,6 +282,21 @@ $ExecutionContext.SessionState.InvokeCommand.CommandNotFoundAction = {
         $CommandLookupEventArgs.Command = Get-Command ( $CommandName -replace ([char]8211), ([char]45) ) -ErrorAction Ignore
     }
 }
+# load session helpers
+."$SCRIPTS\sessions.ps1"
+
+###############################################################################
+# aliases
+###############################################################################
+set-alias fortune ${SCRIPTS}\fortune.ps1
+set-alias ss select-string
+
+###############################################################################
+# Other environment configurations
+###############################################################################
+set-location $HOME
+# OS default location needs to be set as well
+[System.Environment]::CurrentDirectory = $HOME
 
 Trace-Message "Profile Finished!" -KillTimer
 
