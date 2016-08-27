@@ -1,5 +1,3 @@
-#How to connect to Office 365 Cloud Services using PowerShell
-
 #Capture administrative credential for future connections.
 $credential = get-credential
 
@@ -21,8 +19,8 @@ Import-PSSession $lyncSession
 #Imports SharePoint Online session commands into your local Windows PowerShell session.
 Import-Module Microsoft.Online.Sharepoint.PowerShell
 
-#This connects you to your SharePoint Online services. Substitute the ‘contoso’ portion of the URL with the name of your SharePoint Online tenant.
-Connect-SPOService -url https://contoso-admin.sharepoint.com -Credential $credential
+#This connects you to your SharePoint Online services.
+Connect-SPOService -url https://dataweapons-admin.sharepoint.com -Credential $credential
 
 #Creates an Exchange Online session using defined credential.
 $ExchangeSession = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri "https://outlook.office365.com/powershell-liveid/" -Credential $credential -Authentication "Basic" -AllowRedirection
